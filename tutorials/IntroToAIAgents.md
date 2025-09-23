@@ -14,7 +14,6 @@ koog = "0.4.0"
 koog-agents = { module = "ai.koog:koog-agents", version.ref = "koog" }
 koog-tools = { module = "ai.koog:agents-tools", version.ref = "koog" }
 koog-executor-openai-client = { module = "ai.koog:prompt-executor-openai-client", version.ref = "koog" }
-koog-features-event-handler = { module = "ai.koog:agents-features-event-handler", version.ref = "koog" }
 
 [plugins]
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
@@ -24,7 +23,6 @@ dependencies {
     implementation(libs.koog.agents)
     implementation(libs.koog.tools)
     implementation(libs.koog.executor.openai.client)
-    implementation(libs.koog.features.event.handler)
 }
 ```
 
@@ -132,11 +130,11 @@ Let’s walk through an example of sending money, step by step.
 
 ![Tools Send Money](images/tools-send-money.png)
 
-* User says: “Send 20 euros to Daniel”.
-* We send this request to the LLM, along with the list of available tools—in our case, just one: send money.
-* The LLM processes the input and returns the chosen tool name along with its arguments. That’s called a tool call.
-* From there, we can invoke the tool, calling any function in our environment.
-* For example, show a confirmation screen, and if the user agrees, perform the transfer.
+1. User says: “Send 20 euros to Daniel”.
+2. We send this request to the LLM, along with the list of available tools—in our case, just one: send money.
+3. The LLM processes the input and returns the chosen tool name along with its arguments. That’s called a tool call.
+4. From there, we can invoke the tool, calling any function in our environment.
+5. For example, show a confirmation screen, and if the user agrees, perform the transfer.
 
 Note that the large language model doesn’t run the tool itself—it just picks one. We invoke it on our side. We’re getting closer to the idea of an agent—a model that uses tools in a loop, based on feedback from the environment.
 
@@ -182,7 +180,7 @@ We need to include `LLMDescription` annotations with the corresponding descripti
 
 ### Basic Agent Using a Tool
 
-Next, let’s create an agent that can call this tool. We’ll use Koog’s implementation: the AIAgent class. It runs prompts, manages tools, and can set up additional features:
+Next, let’s create an agent that can call this tool. We’ll use Koog’s implementation: the `AIAgent` class. It runs prompts, manages tools, and can set up additional features:
 
 
 ```kotlin
@@ -190,7 +188,7 @@ val agent = AIAgent(...)
 ```
 
 
-We need to pass in the Koog PromptExecutor, which acts as a higher-level abstraction for model interaction. While LLMClient is a low-level layer for communicating with different LLMs, the PromptExecutor builds on top of it, allowing you to add things like monitoring and logging. A single executor can manage multiple LLMClients—useful when your code interacts with different model providers. In our case, we use SingleLLMPromptExecutor, taking the client as an argument:
+We need to pass in the Koog `PromptExecutor`, which acts as a higher-level abstraction for model interaction. While `LLMClient` is a low-level layer for communicating with different LLMs, the `PromptExecutor` builds on top of it, allowing you to add things like monitoring and logging. A single executor can manage multiple `LLMClient`s—useful when your code interacts with different model providers. In our case, we use `SingleLLMPromptExecutor`, taking the client as an argument:
 
 
 ```kotlin
@@ -198,16 +196,13 @@ val client = OpenAILLMClient(System.getenv("OPENAI_API_KEY"))
 val executor = SingleLLMPromptExecutor(client)
 ```
 
-
-Since we only use the OpenAI model, we can alternatively create a simple OpenAI executor directly; it’s the same code as above:
-
+Since we only use the OpenAI model, we can alternatively create a `simpleOpenAIExecutor` directly; it’s the same code as above:
 
 ```kotlin
 val executor = simpleOpenAIExecutor(System.getenv("OPENAI_API_KEY"))
 ```
 
-
-Next, we need to pass in a tool. The agent expects a tool registry, which typically contains multiple tools. The ToolRegistry is like a hub for all the tools an agent can use. It lets you register new tools and easily get them later by name or type. To create it, we call `ToolRegistry`, and we add a tool using the `tool()` function. You can pass a reference to a function annotated with `@Tool`:
+Next, we need to pass in a tool. The agent expects a tool registry, which typically contains multiple tools. The `ToolRegistry` is like a hub for all the tools an agent can use. It lets you register new tools and easily get them later by name or type. To create it, we call `ToolRegistry`, and we add a tool using the `tool()` function. You can pass a reference to a function annotated with `@Tool`:
 
 
 ```kotlin
@@ -217,7 +212,7 @@ val toolRegistry = ToolRegistry {
 ```
 
 
-Let’s pass the executor and the tool registry to our agent, and add a system prompt: You’re a banking assistant; accompany the user with their request:
+Let’s pass the executor and the tool registry to our agent and add a system prompt instructing a model to behave like a banking assistant:
 
 
 ```kotlin
@@ -229,9 +224,7 @@ val agent = AIAgent(
 )
 ```
 
-
 Then, when we run the agent, we pass the user message “send 25 euros to Daniel” as an argument. Let’s output the result:
-
 
 ```kotlin
 val message = "Send 25 euros to Daniel for dinner at the restaurant."
@@ -240,9 +233,7 @@ println("Final result:")
 println(result)
 ```
 
-
-When we run this code, we can see that our tool, the `sendMoney` function, gets called! We see the *“Please confirm the transaction”* message from the `sendMoney` implementation.
-
+When we run this code, we can see that our tool, the `sendMoney` function, gets called! We see the *“Please confirm the transaction”* message from the `sendMoney` implementation:
 
 ```
 =======
@@ -251,9 +242,7 @@ Please confirm the transaction by entering 'yes' or 'no'.
 =======
 ```
 
-
-Let’s say we confirm, and then the LLM sends us the final response, saying the transfer was successful:
-
+Suppose we confirm by entering "Yes," and the LLM responds that the transfer was successful:
 
 ```
 =======
@@ -262,12 +251,19 @@ Final result:
 I have sent 25 euros to Daniel for dinner at the restaurant. If you need anything else, feel free to ask!
 ```
 
+To better understand how all of this works, let’s track the request and response from the LLM by adding an event handler. We could also use proper tracing and logging, of course, that’s, btw, why you see the red error messages – usually, you provide a logger. But to avoid overly verbose logs, we're using this approach in the tutorial.
 
-To better understand how all of this works, let’s track the request and response from the LLM by adding an event handler. We could also use proper tracing and logging, of course, that’s, btw, why you see the red error messages – usually, you provide a logger. But to avoid overly verbose logs, I’m using this approach in the tutorial.
+Let’s add the `event-handler` dependency—both to the version catalog and to the  script:
 
-Let’s add the `event-handler` dependency—both to the version catalog and to the  script.
+```kotlin
+// libs.versions.toml
+koog-features-event-handler = { module = "ai.koog:agents-features-event-handler", version.ref = "koog" }
 
-`AIAgent` takes an `installFeatures` lambda as its last argument. This allows you to install features like tracing, agent memory, or—like in our case—an event handler. Typically, you call `install` and pass the feature name—for example: `install(EventHandler)`.  But for this case, we also have a convenient extension called `handleEvents`.
+// build.gradle.kts
+implementation(libs.koog.features.event.handler)
+```
+
+`AIAgent` takes an `installFeatures` lambda as its last argument. This allows you to install features like tracing, agent memory, or—like in our case—an event handler. Typically, you call `install` and pass the feature name—for example: `install(EventHandler)`.  But for this case, we also have a convenient extension called `handleEvents {...}`:
 
 
 ```kotlin
@@ -306,7 +302,9 @@ Run the code again.
 
 Tools are often described as functions the LLM can use to give you the result you need. But you can also provide the LLM with a tool to call for its side effects—and in some cases, the tool invocation is the result. In this example, the LLM returns a final confirmation, but the main action was actually performed during the tool call.
 
-Let’s now return to the general flow of a basic agent with tool calls.
+Let’s now return to the general flow of a basic agent with tool calls:
+
+![Tools General Flow](images/tools-general-flow.png)
 
 1. The user sends a prompt to the agent.
 2. The agent calls the LLM—it might resend the same prompt along with the available tools, or it might add some additional context.
@@ -315,7 +313,7 @@ Let’s now return to the general flow of a basic agent with tool calls.
 5. It gets the result from the environment, which it then sends back to the LLM.
 6. This process goes on until the LLM no longer wants to call any tools and reaches the final answer.
 
-A basic agent is a model that uses tools in a loop, based on feedback from the environment.
+**A basic agent is a model that uses tools in a loop, based on feedback from the environment.**
 
 We say that such an agent follows a universal strategy: simply give the LLM the task and all the available tools. The LLM kind of becomes the “brain”—it decides on its own which tools to call and in what order. Let’s add more tools to our example to see this in action.
 
@@ -394,6 +392,8 @@ fun sendMoney(
 Next, let’s implement the getContacts function, which returns a list of contacts. Since LLMs work with text, we can simply send the list as a String:
 
 ```kotlin
+val contactMap = contactList.associateBy { it.id }
+
 @Tool
 @LLMDescription("Retrieves the list of contacts associated with the user identified by their ID.")
 fun getContacts(
@@ -462,29 +462,26 @@ val toolRegistry = ToolRegistry {
 
 The tools() function adds all the annotated methods defined in a given ToolSet as separate tools to a registry. It expects a `ToolSet` as a parameter, so that’s why it’s important for `MoneyTransferTools` to implement `ToolSet`.
 
-I’ve again visualized what’s happening for you if we run our agent:
-
-![Tools General Flow](images/tools-general-flow.png)
+Let's see step-by-step what happens if we run our agent:
 
 * The user sends a request.
 * The agent forwards this request—along with the list of all the available tools—to the LLM.
 * The LLM first decides to get all the available contacts.
-* The agent calls the tool,
+* The agent calls the tool.
 * The environment returns the list of contacts.
 * The agent then sends the tool result along with the previous conversation history, so the LLM understands the context.
 * The model sees that there are two contacts named Daniel, so it decides to call the "chooseRecipient" tool.
 * That tool requires user input.
 * The user confirms their choice, and we send the result back to the LLM, once again including the full history.
+* Finally, the LLM decides to call the `sendMoney` tool, providing the correct recipient ID as an argument.
 
-Finally, the LLM decides to call the `sendMoney` tool, providing the correct recipient ID as an argument.
-
-Let’s now observe that in action. Since we have our event handlers installed, we can check the requests to LLM and its responses. We see that three tools are sent to the model. First, it chooses to call ‘getContacts’, and we send back this information.
-
-Next, it calls ‘chooseRecipient’. Koog calls our tool, and we need to choose the contact. Let's say we mean Daniel Anderson. At the next step, the LLM indeed wants to send money to him. We can confirm.
+You can observe that in action. Since we have the event handlers installed, you can check the requests to LLM and its responses. 
 
 ### Conversation History
 
-We always send the LLM the entire conversation history.
+We always send the LLM the entire conversation history:
+
+![Message History](images/message-history.gif)
 
 * At first, it’s just the system and user messages, along with a separate list of available tools.
 * Then, the LLM decides to call a tool, and we append the result.
@@ -493,18 +490,20 @@ We always send the LLM the entire conversation history.
 
 If you only send the last message, such as a tool call result, it won’t remember what your original request was! The good news is—Koog handles it automatically for you. Each time, when LLM decides to call a tool, Koog calls it and appends the result to the list of messages.
 
-By the way, Koog also lets you optimize the message history using different history compression approaches—but that’s a topic for another video.
+By the way, Koog also lets you optimize the message history using different history compression approaches.
 
 ### Basic Agent and Beyond
 
-So now you understand what an agent with a universal strategy is: a model calling tools in a loop. We give the model the tools, *all the available tools*, let it decide which ones to use, call those tools to get results, and send the results back to the model. That’s it!
+So now you understand what an agent with a universal strategy is: a model calling tools in a loop. We give the model the available tools, let it decide which ones to use, call those tools to get results, and send the results back to the model. That’s it!
 
 You can think of it like this: “the LLM is the brain”. It makes all the decisions based on your input. You don’t know which tools it’s going to call or in what order. That’s exactly what we saw in our example: the LLM had a list of tools and decided on its own which ones to use and when. It was able to take the result of one of the tool calls—like the recipient ID—and use it as input for the next one.
 
-You can ask a model to solve a pretty complicated task, and only provide a list of tools, using a basic universal agent we just discussed. It works surprisingly well – try it yourself, *it’s all you need* to start creating your own agents! I really want to encourage you to try that: define tools, pick up the model, ask it to complete your task with the provided tools. For a prototype, it’s more than enough – you can see what LLMs are capable of, and what their constraints are for your specific use case.
+You can ask a model to solve a pretty complicated task, and only provide a list of tools, using a basic universal agent we just discussed. It works surprisingly well – try it yourself, *it’s all you need* to start creating your own agents! Define tools, pick up the model, ask it to complete your task with the provided tools. For a prototype, it’s more than enough – you can see what LLMs are capable of, and what their constraints are for your specific use case.
 
-However, such a universal strategy of providing a high-level task and all the available tools *no longer works* when the complexity grows, when you start to productize your functionality. Especially if you have a lot of tools, you often end up using different models and different sets of tools for different subtasks. Koog lets you orchestrate how those subtasks are connected to each other.
+However, such a universal strategy of providing a high-level task and all the available tools no longer works when the complexity grows, when you start to productize your functionality. Especially if you have a lot of tools, you often end up using different models and different sets of tools for different subtasks. Koog lets you orchestrate how those subtasks are connected to each other.
 
 Think of it from the perspective of how much autonomy you want to give LLMs. There’s no one-size-fits-all—it depends on your use case. As a developer, you figure out which tasks the LLM can handle on its own and which need to be broken down and coded explicitly. The ability to move this LLM autonomy slider and to find that sweet spot for your requirements is crucial for real-life production scenarios. And Koog gives you this flexibility.
 
-It does so much more: memory, persistence, history compression, advanced agent strategies, tracing, observability—everything you need to run AI agents in production. You’re now ready to start building your first Kotlin agent—let’s go!
+It does so much more: memory, persistence, history compression, advanced agent strategies, tracing, observability—everything you need to run AI agents in production. 
+
+You’re now ready to start building your first Kotlin agent—let’s go!
