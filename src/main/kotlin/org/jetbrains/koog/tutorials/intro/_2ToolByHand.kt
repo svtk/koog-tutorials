@@ -1,4 +1,4 @@
-package org.jetbrains.koog.tutorials.intro
+package org.jetbrains.koog.tutorials.intro2
 
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient

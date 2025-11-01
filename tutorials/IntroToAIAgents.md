@@ -7,8 +7,8 @@ We'll start from scratch and see how to communicate with an LLM in Kotlin. We’
 ```kotlin
 // libs.versions.toml
 [versions]
-kotlin = "2.1.21"
-koog = "0.4.0"
+kotlin = "2.2.21"
+koog = "0.5.2"
 
 [libraries]
 koog-agents = { module = "ai.koog:koog-agents", version.ref = "koog" }
@@ -217,7 +217,7 @@ Let’s pass the executor and the tool registry to our agent and add a system pr
 
 ```kotlin
 val agent = AIAgent(
-   executor = executor,
+   promptExecutor = executor,
    llmModel = model,
    systemPrompt = "You're a banking assistant. Accompany the user with their request.",
    toolRegistry = toolRegistry
@@ -268,20 +268,20 @@ implementation(libs.koog.features.event.handler)
 
 ```kotlin
 val agent = AIAgent(
-   executor = executor,
+   promptExecutor = executor,
    llmModel = model,
    systemPrompt = "You're a banking assistant. Accompany the user with their request.",
    toolRegistry = toolRegistry
 ) {
    handleEvents {
-       onBeforeLLMCall { ctx ->
+       onLLMCallStarting { ctx ->
            println("Request to LLM:")
            println("    # Messages:")
            ctx.prompt.messages.forEach { println("    $it") }
            println("    # Tools:")
            ctx.tools.forEach { println("    $it") }
        }
-       onAfterLLMCall { ctx ->
+       onLLMCallCompleted { ctx ->
            println("LLM response:")
            ctx.responses.forEach { println("    $it") }
        }
@@ -290,7 +290,7 @@ val agent = AIAgent(
 ```
 
 
-We want to handle two types of events: “Before the LLM call”, where we’ll print out the messages and tools, and “After the LLM call”, where we’ll print the LLM’s response.
+We want to handle two types of events: “On the LLM Call Start”, where we’ll print out the messages and tools, and “On the LLM Call Completion”, where we’ll print the LLM’s response.
 
 Run the code again.
 

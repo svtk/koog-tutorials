@@ -1,4 +1,4 @@
-package org.jetbrains.koog.tutorials.intro
+package org.jetbrains.koog.tutorials.intro3
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
@@ -39,20 +39,20 @@ suspend fun main() {
         tool(::sendMoney)
     }
     val agent = AIAgent(
-        executor = executor,
+        promptExecutor = executor,
         llmModel = model,
         systemPrompt = "You're a banking assistant. Accompany the user with their request.",
         toolRegistry = toolRegistry
     ) {
         handleEvents {
-            onBeforeLLMCall { ctx ->
+            onLLMCallStarting { ctx ->
                 println("Request to LLM:")
                 println("    # Messages:")
                 ctx.prompt.messages.forEach { println("    $it") }
                 println("    # Tools:")
                 ctx.tools.forEach { println("    $it") }
             }
-            onAfterLLMCall { ctx ->
+            onLLMCallCompleted { ctx ->
                 println("LLM response:")
                 ctx.responses.forEach { println("    $it") }
             }

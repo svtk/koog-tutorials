@@ -1,6 +1,6 @@
 [versions]
-kotlin = "2.1.21"
-koog = "0.4.0"
+kotlin = "2.2.21"
+koog = "0.5.2"
 logback = "1.5.13"
 
 [libraries]

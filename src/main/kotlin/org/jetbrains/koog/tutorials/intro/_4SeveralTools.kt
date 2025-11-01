@@ -1,4 +1,4 @@
-package org.jetbrains.koog.tutorials.intro
+package org.jetbrains.koog.tutorials.intro4
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
@@ -121,20 +121,20 @@ fun main() = runBlocking {
     val systemPrompt = "You're a banking assistant interacting with a user (userId=123). " +
             "Your goal is to understand the user's request and determine whether it can be fulfilled using the available tools."
     val agent = AIAgent(
-        executor = executor,
+        promptExecutor = executor,
         llmModel = model,
         systemPrompt = systemPrompt,
         toolRegistry = toolRegistry
     ) {
         handleEvents {
-            onBeforeLLMCall { ctx ->
+            onLLMCallStarting { ctx ->
                 println("Request to LLM:")
                 println("    # Messages:")
                 ctx.prompt.messages.forEach { println("    $it") }
                 println("    # Tools:")
                 ctx.tools.forEach { println("    $it") }
             }
-            onAfterLLMCall { ctx ->
+            onLLMCallCompleted { ctx ->
                 println("LLM response:")
                 ctx.responses.forEach { println("    $it") }
             }
