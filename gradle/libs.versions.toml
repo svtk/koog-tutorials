@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.2.21"
-koog = "0.5.2"
+koog = "0.6.0"
 logback = "1.5.13"
 
 [libraries]

@@ -8,7 +8,7 @@ import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
     val client = OpenAILLMClient(System.getenv("OPENAI_API_KEY"))
-    val model = OpenAIModels.CostOptimized.GPT4_1Mini
+    val model = OpenAIModels.Chat.GPT4_1Mini
     val prompt = prompt(
         id = "tool-by-hand",
         params = LLMParams(temperature = 0.7)

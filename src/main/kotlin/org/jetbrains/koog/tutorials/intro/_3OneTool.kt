@@ -33,7 +33,7 @@ fun sendMoney(
 
 suspend fun main() {
     val executor = simpleOpenAIExecutor(System.getenv("OPENAI_API_KEY"))
-    val model = OpenAIModels.CostOptimized.GPT4_1Mini
+    val model = OpenAIModels.Chat.GPT4_1Mini
 
     val toolRegistry = ToolRegistry {
         tool(::sendMoney)

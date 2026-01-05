@@ -112,7 +112,7 @@ class MoneyTransferTools : ToolSet {
  */
 fun main() = runBlocking {
     val executor = simpleOpenAIExecutor(System.getenv("OPENAI_API_KEY"))
-    val model = OpenAIModels.CostOptimized.GPT4_1Mini
+    val model = OpenAIModels.Chat.GPT4_1Mini
 
     val toolRegistry = ToolRegistry {
         tools(MoneyTransferTools().asTools())
